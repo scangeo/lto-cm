@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include "sg_lib.h"
 #include "sg_io_linux.h"
-#include "lto-mam.h"
+#include "lto-cm.h"
 
 struct globalArgs_t {
 	int verbose;
@@ -25,7 +25,7 @@ static void usage()
     fprintf(stderr, 
           "LTO-3/LTO-4 Medium Access Memory tool for User Medium Text Label\n"
           "Usage: \n"
-          "sg_mam_text -f device -r/w [\"message\"] [-v]\n"
+          "lto-cm -f device -r/w [\"message\"] [-v]\n"
           " where:\n"
           "    -f device        is a sg device                        \n"
           "    -r/w             read OR write\n"

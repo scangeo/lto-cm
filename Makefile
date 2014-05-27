@@ -5,17 +5,17 @@ CC = gcc
 EXECS = install
 LARGE_FILE_FLAGS = -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
-install: lto-mam.o $(LIBFILES)
-	$(CC) -o lto-mam $(LDFLAGS) $^
+install: lto-cm.o $(LIBFILES)
+	$(CC) -o lto-cm $(LDFLAGS) $^
 	@mkdir -p $(DESTDIR)/usr/bin
-	@cp lto-mam $(DESTDIR)/usr/bin
+	@cp lto-cm $(DESTDIR)/usr/bin
 	@mkdir -p $(DESTDIR)/usr/lib64
 	@mkdir -p $(DESTDIR)/usr/lib
 	@mkdir -p $(DESTDIR)/usr/include
 	@mkdir -p $(DESTDIR)/usr/share/man/
 	@mkdir -p $(DESTDIR)/usr/share/man/en
 	@mkdir -p $(DESTDIR)/usr/share/man/en/man1
-	@cp ./lto-mam.1.gz $(DESTDIR)/usr/share/man/en/man1
+	@cp ./lto-cm.1.gz $(DESTDIR)/usr/share/man/en/man1
 	@cp ./include/sg_cmds.h $(DESTDIR)/usr/include
 	@cp ./include/sg_cmds_basic.h $(DESTDIR)/usr/include
 	@cp ./include/sg_cmds_extra.h $(DESTDIR)/usr/include
@@ -34,7 +34,7 @@ install: lto-mam.o $(LIBFILES)
 	@cp ./lib64/sg_lib_data.o $(DESTDIR)/usr/lib64
 	
 uninstall:
-	@rm -rf $(DESTDIR)/usr/bin/lto-mam
+	@rm -rf $(DESTDIR)/usr/bin/lto-cm
 	
 reinstall: uninstall install
 
