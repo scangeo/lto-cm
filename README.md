@@ -1,14 +1,10 @@
-lto-cm
-=======
+# lto-cm
 Read and write the text attribute of a Linear Tape Open (LTO) cartridge memory chip, also called Medium Access Memory (MAM).
 
+## Why this Repository?
+Since the idea of the orignal repository is great, I would like to support more CM fields to be written/read. Indeed, the orginal repository can read/write data to "USER MEDIUM TEXT LABEL" feild only. There are many other fileds avilable for client, such as "DATE AND TIME LAST WRITTEN", "BARCODE" and "MEDIA POOL" etc... which are useful for asset management of tape media. Also, I will support more Linux distribtuions such as Debian/Ubutnt/CentOS/SUSE. I make this repository active as much as possible. 
 
-Why this Repository?
-=======
-Since the idea of the orignal repository is great, I would like to support more CM fields to be written/read. Indeed, the orginal repository allows us to read/write data to "USER MEDIUM TEXT LABEL" feild only. There are many other fileds avilable for client, such as "DATE AND TIME LAST WRITTEN", "BARCODE" and "MEDIA POOL" etc... which are useful for asset management. Also, I try to support more Linux distribtuions such as Debian/Ubutnt/CentOS/SUSE. I try to make this repository active as much as possible. 
-
-Supported MAM field
-=======
+## Supported MAM field
 (Attribute Identifier) (Name) (Length) (Format) 
 - 0800h APPLICATION VENDOR 8 ASCII
 - 0801h APPLICATION NAME 32 ASCII
@@ -24,25 +20,19 @@ Supported MAM field
 - 0820h MEDIUM GLOBALLY UNIQUE IDENTIFIER 36 BINARY
 - 0821h MEDIA POOL MEDIA POOL GLOBALLY UNIQUE IDENTIFIER 26 BINARY
 
-Curretnly, `0803h` only.
-
-Supported Distributions
-=======
+## Supported Distributions
 TBD
 
-Demo
-=======
+## Demo
 TBD
 
+## Required Packages
+TBD
 
-How to Generate Binaries
-========================
-**Requires gcc
+## Build & Install
+- Install required packages above
+- Copy this repository (git clone)
+- `make all && make install`
 
-- Download root directory of lto-cm
-- Open a terminal
-- Replace Makefile on root folder with binaries/Makefile
-- Open location in terminal
-- Type make
-
-This should provide binaries for lto-cm.
+## Uninstall
+- `make uninstall`
