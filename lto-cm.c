@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include "./include/sg_io_linux.h"
+#include "scsi/sg_io_linux.h"
 #include "lto-cm.h"
 
 #define APPLICATION_VENDOR                          0x0800
@@ -128,7 +128,7 @@ int att_write(int fd, uint16_t att_id, char* data, int verbose){
     unsigned char wr_att[169] = {0, 0, 0, att_len + 5, msb_att_id, lsb_att_id, 2, 0, att_len};
 
     if(strlen (data) > att_len ){
-        printf("ERROR: Message must not exceed %d bytes\n, att_len");
+        printf("ERROR: Message must not exceed %d bytes\n", att_len);
         return -1;
 
     } else {
