@@ -6,6 +6,8 @@ Every LTO media has a RFID chip inside the cartridge shell. This LTO-CM has 4kB 
 
 (Client) <-(SCSI Command: READ/WRITE ATTRIBUTE)-> (Tape Drive) <-> (RFID Card Reader/Writer in the Drive) <-(ISO14443a-based RFID Command, 13.56MHz)-> (LTO-CM)
 
+This lto-cm is a software wrapper sending the SCSI command above to the drive.
+
 ## Why This Repository?
 Since the idea of the orignal repository is great, I would like to support more CM fields to be written/read. Indeed, the orginal repository can read/write data to "USER MEDIUM TEXT LABEL" feild only. There are many other fileds avilable for client, such as "DATE AND TIME LAST WRITTEN", "BARCODE" and "MEDIA POOL" etc... which are useful for asset management of tape media. Also, I will support more Linux distribtuions such as Debian/Ubuntu/CentOS/SUSE. I make this repository active as much as possible. 
 
