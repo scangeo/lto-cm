@@ -59,6 +59,8 @@ static void usage() {
           "Example:\n"
           "  lto-cm -f /dev/st0 -r 2051                                : Read data from USER MEDIUM TEXT LABEL with /dev/st0\n"
           "  lto-cm -f /dev/st1 -w 2054 -m TAPE00L8                    : Write TAPE00L8 to BARCODE with /dev/st1\n"
+          "Manual:\n"
+          "  There is no man page. In exchange, visit the original repository: https://github.com/Kevin-Nakamoto/lto-cm\n"
          );
 }
 

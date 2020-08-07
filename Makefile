@@ -9,7 +9,6 @@ all: lto-cm.o $(LIBFILES)
 
 install:
 	@cp lto-cm /usr/bin
-	@cp ./lto-cm.1.gz /usr/share/man/man1
 	
 uninstall:
 	@rm -rf /usr/bin/lto-cm
