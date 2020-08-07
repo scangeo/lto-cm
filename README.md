@@ -1,5 +1,10 @@
 # lto-cm
-Read and write the text attribute of a Linear Tape Open (LTO) cartridge memory chip, also called Medium Access Memory (MAM).
+Read and write the text attribute of a Linear Tape Open cartridge memory (LTO-CM) chip, also called Medium Access Memory (MAM).
+
+## What is LTO-CM and How to Communicate?
+Every LTO media has a RFID chip inside the cartridge shell. This LTO-CM has 4kB - 16kB of capacity depending on LTO generation, which stores some attributes related to drive, media and host. Indeed, there are three types for these attributes: Device, Medium and Host. Device and Medium are read-only from the client and only tape drive can write data. Host type attributes are writable from the client, and these fields shall be communicated via protocols below. 
+
+(Client) <-(SCSI Command: READ/WRITE ATTRIBUTE)-> (Tape Drive) <-> (RFID Card Reader/Writer in the Drive) <-(ISO14443a-based RFID Command, 13.56MHz)-> (LTO-CM)
 
 ## Why This Repository?
 Since the idea of the orignal repository is great, I would like to support more CM fields to be written/read. Indeed, the orginal repository can read/write data to "USER MEDIUM TEXT LABEL" feild only. There are many other fileds avilable for client, such as "DATE AND TIME LAST WRITTEN", "BARCODE" and "MEDIA POOL" etc... which are useful for asset management of tape media. Also, I will support more Linux distribtuions such as Debian/Ubuntu/CentOS/SUSE. I make this repository active as much as possible. 
@@ -71,6 +76,16 @@ TBD
 
 ## Uninstall
 - `make uninstall`
+
+## Author
+- Kevin Nakamoto
+- Original [repository](https://github.com/scangeo/lto-cm)
+
+## See Also
+- [LTO SCSI Reference](https://render-prd-trops.events.ibm.com/sites/default/files/support/ssg/ssgdocs.nsf/0/4d430d4b4e1f09b18525787300607b1d/%24FILE/LTO%20SCSI%20Reference%20%28EXTERNAL%20-%2020171024%29.pdf) for SCSI command
+- [LTO-1 Specification](https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-319.pdf) for RFID command
+- [LTO-CM-Read](https://github.com/Kevin-Nakamoto/LTO-CM-Read) for reading all the attributes
+- [LTO-CM-Analyzer](https://github.com/Kevin-Nakamoto/LTO-CM-Analyzer) for reading/writing data to the chip without tape drive
 
 ## License
 [MIT](https://github.com/Kevin-Nakamoto/lto-cm/blob/master/LICENSE)
