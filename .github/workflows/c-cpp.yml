@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Install-Library
-      run: apt-get -y install libsgutils2-dev
+    - name: Install Library
+      run: sudo apt-get install libsgutils2-dev
     - name: make
       run: make
