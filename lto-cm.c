@@ -279,6 +279,7 @@ int main(int argc, char * argv[])
             
         case 'w':
             args.write_opt = 1;
+            args.att_id = atoi(optarg);
             break;
         case 'm':
             args.msg = (char*)optarg;
@@ -306,19 +307,19 @@ int main(int argc, char * argv[])
     }
 	
     if((args.read_opt) && (args.write_opt)){
-        fprintf(stderr, "ERROR: Can't read and write at the same time\n");
+        fprintf(stderr, "ERROR: Can't read and write at the same time.\n");
         usage();
         return SG_LIB_SYNTAX_ERROR;
     }
 
     if(!((args.read_opt) || (args.write_opt))){
-        fprintf(stderr, "ERROR: Specify read or write operation\n");
+        fprintf(stderr, "ERROR: Specify read or write operation.\n");
         usage();
         return SG_LIB_SYNTAX_ERROR;
     }
 
     if((args.write_opt) && (args.msg==NULL)){
-        fprintf(stderr, "ERROR: Message is missing\n");
+        fprintf(stderr, "ERROR: Message is missing.\n");
         usage();
         return SG_LIB_SYNTAX_ERROR;
     }
@@ -330,7 +331,7 @@ int main(int argc, char * argv[])
     }
 
     if ((ioctl(sg_fd, SG_GET_VERSION_NUM, &k) < 0) || (k < 30000)) {
-        printf("ERROR: %s doesn't seem to be sg device\n", args.device_name);
+        printf("ERROR: %s doesn't seem to be sg device.\n", args.device_name);
         close(sg_fd);
         return -1;
     }
@@ -338,7 +339,7 @@ int main(int argc, char * argv[])
 
     if (args.read_opt){
         if(att_read(sg_fd, args.att_id, messageout, args.verbose) == -1) {
-            printf("ERROR: Read failed. Try verbose option)\n");
+            printf("ERROR: Read failed. Try verbose option.\n");
             close(sg_fd);
             return -1;
         }
@@ -354,7 +355,7 @@ int main(int argc, char * argv[])
 
     if(args.write_opt) {
         if(att_write(sg_fd, args.att_id, args.msg, args.verbose) == -1) {
-            printf("ERROR: Write failed. Try verbose option)\n");
+            printf("ERROR: Write failed. Try verbose option.\n");
             close(sg_fd);
             return -1;
         }
