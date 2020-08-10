@@ -134,7 +134,7 @@ int att_write(int fd, uint16_t att_id, char* data, int verbose){
         return -1;
 
     } else {
-        strcpy((char*) & att_len, data);
+        strcpy((char*) & wr_att[9], data);
     }
 
     memset(&io_hdr, 0, sizeof(sg_io_hdr_t));
