@@ -48,8 +48,8 @@ Usage:
   lto-cm -h/?                                               : Display usage
   -v                                                        : Increase verbosity
 Example:
-  lto-cm -f /dev/st0 -r 2051                                : Read data from USER MEDIUM TEXT LABEL with /dev/st0
-  lto-cm -f /dev/st1 -w 2054 -m TAPE00L8                    : Write TAPE00L8 to BARCODE with /dev/st1
+  lto-cm -f /dev/sg3 -r 2051                                : Read data from USER MEDIUM TEXT LABEL with /dev/sg3
+  lto-cm -f /dev/sg4 -w 2054 -m TAPE00L8                    : Write TAPE00L8 to BARCODE with /dev/sg4
 ~~~
 
 ## Required Packages
