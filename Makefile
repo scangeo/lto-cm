@@ -8,10 +8,10 @@ all: lto-cm.o $(LIBFILES)
 	 $(CC) -o lto-cm $(LDFLAGS) $^
 
 install:
-	@cp lto-cm /usr/bin
+	@cp lto-cm /usr/local/bin
 	
 uninstall:
-	@rm -rf /usr/bin/lto-cm
+	@rm -rf /usr/local/bin/lto-cm
 	
 reinstall: uninstall clean all install
 
