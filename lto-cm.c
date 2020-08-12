@@ -238,7 +238,7 @@ int att_read(int fd, uint16_t att_id, char* data, int verbose){
         break;
 
     default:
-	printf("ERROR: Attribute does not exist yet. Perform write first\n");
+	printf("ERROR: Attribute does not exist yet. Perform write first.\n");
         if(verbose)sg_chk_n_print3("SG_READ_ATT command error", &io_hdr, 1);
         return -1;
     }
