@@ -3,6 +3,15 @@ Read and write the text attribute of a Linear Tape Open cartridge memory (LTO-CM
 
 ![Build](https://github.com/Kevin-Nakamoto/lto-cm/workflows/C/C++%20CI/badge.svg)
 
+## Demo
+Write a text message (TEST) to USER MEDIUM TEXT LABEL attribute (Address 2051 in decimal), and then verify that with read command.
+
+~~~
+$ sudo lto-cm -f /dev/sg3 -w 2051 -m TEST
+$ sudo lto-cm -f /dev/sg3 -r 2051
+TEST
+~~~
+
 ## What is LTO-CM and How to Communicate?
 Every LTO media has a RFID chip inside the cartridge shell. This LTO-CM has 4kB - 16kB of capacity depending on LTO generation, which stores some attributes related to drive, media and host. Indeed, there are three types for these attributes: Device, Medium and Host. Device and Medium are read-only from the client and only tape drive can write data. Host type attributes are writable from the client, and these fields shall be communicated via protocols below. 
 
