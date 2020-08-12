@@ -125,8 +125,14 @@ int att_write(int fd, uint16_t att_id, char* data, int verbose){
     }
 
     unsigned char wr_att_cmd_blk [WRITE_ATT_CMD_LEN] = {OP_CODE_WR_ATT, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, att_len + 9, 0, 0};
-    uint8_t msb_att_id = (att_id >> 0) & 0xFF;
-    uint8_t lsb_att_id = (att_id >> 8) & 0xFF;
+    uint8_t lsb_att_id = (att_id >> 0) & 0xFF;
+    uint8_t msb_att_id = (att_id >> 8) & 0xFF;
+
+    if (verbose == 1) {
+        printf("msb_att_id: %02x\n", msb_att_id);
+        printf("lsb_att_id: %02x\n", lsb_att_id);
+    }
+
     unsigned char wr_att[169] = {0, 0, 0, att_len + 5, msb_att_id, lsb_att_id, 2, 0, att_len};
 
     if(strlen (data) > att_len ){
@@ -191,8 +197,14 @@ int att_read(int fd, uint16_t att_id, char* data, int verbose){
         return -1;
     }
 
-    uint8_t msb_att_id = (att_id >> 0) & 0xFF;
-    uint8_t lsb_att_id = (att_id >> 8) & 0xFF;
+    uint8_t lsb_att_id = (att_id >> 0) & 0xFF;
+    uint8_t msb_att_id = (att_id >> 8) & 0xFF;
+
+    if (verbose == 1) {
+        printf("msb_att_id: %02x\n", msb_att_id);
+        printf("lsb_att_id: %02x\n", lsb_att_id);
+    }
+
     unsigned char rd_att_cmd_blk[READ_ATT_CMD_LEN] = {OP_CODE_RD_ATT, 0, 0, 0, 0, 0, 0, 0, msb_att_id, lsb_att_id, 0, 0, att_len + 9, 0, 0, 0};
 
     unsigned char in_Buff[READ_ATT_REPLY_LEN];
