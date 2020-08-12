@@ -76,10 +76,10 @@ TBD
 ## Build & Install
 - Install required packages above
 - Copy this repository (git clone)
-- `make all && make install`
+- `make all && sudo make install`
 
 ## Uninstall
-- `make uninstall`
+- `sudo make uninstall`
 
 ## Author
 - Kevin Nakamoto
