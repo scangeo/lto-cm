@@ -37,8 +37,7 @@
 #define OP_CODE_RD_ATT 0x8C
 
 #define READ_ATT_REPLY_LEN 512
-#define READ_ATT_CMD_LEN 16
-#define WRITE_ATT_CMD_LEN 16
+#define CDB_LEN 16
 
 #define FMT_BIN 0
 #define FMT_ASCII 1
@@ -69,108 +68,109 @@ static void usage() {
          );
 }
 
-static void get_att_param(uint16_t att_id, uint8_t *att_len, uint8_t *att_format) {
+static void get_att_param(uint16_t att_id, uint8_t *att_len_max, uint8_t *att_format) {
 
     switch (att_id) {
     case APPLICATION_VENDOR:
-        *att_len = APPLICATION_VENDOR_SIZE;
+        *att_len_max = APPLICATION_VENDOR_SIZE;
         *att_format = FMT_ASCII;
         break;
     case APPLICATION_NAME:
-        *att_len = APPLICATION_NAME_SIZE;
+        *att_len_max = APPLICATION_NAME_SIZE;
         *att_format = FMT_ASCII;
         break;
     case APPLICATION_VERSION:
-        *att_len = APPLICATION_VERSION_SIZE;
+        *att_len_max = APPLICATION_VERSION_SIZE;
         *att_format = FMT_ASCII;
         break;
     case USER_MEDIUM_TEXT_LABEL:
-        *att_len = USER_MEDIUM_TEXT_LABEL_SIZE;
+        *att_len_max = USER_MEDIUM_TEXT_LABEL_SIZE;
         *att_format = FMT_TEXT;
         break;
     case DATE_AND_TIME_LAST_WRITTEN:
-        *att_len = DATE_AND_TIME_LAST_WRITTEN_SIZE;
+        *att_len_max = DATE_AND_TIME_LAST_WRITTEN_SIZE;
         *att_format = FMT_ASCII;
         break;
     case TEXT_LOCALIZATION_IDENTIFIER:
-        *att_len = TEXT_LOCALIZATION_IDENTIFIER_SIZE;
+        *att_len_max = TEXT_LOCALIZATION_IDENTIFIER_SIZE;
         *att_format = FMT_BIN;
         break;
     case BARCODE:
-        *att_len = BARCODE_SIZE;
+        *att_len_max = BARCODE_SIZE;
         *att_format = FMT_ASCII;
         break;
     case OWNING_HOST_TEXTUAL_NAME:
-        *att_len = OWNING_HOST_TEXTUAL_NAME_SIZE;
+        *att_len_max = OWNING_HOST_TEXTUAL_NAME_SIZE;
         *att_format = FMT_TEXT;
         break;
     case MEDIA_POOL:
-        *att_len = MEDIA_POOL_SIZE;
+        *att_len_max = MEDIA_POOL_SIZE;
         *att_format = FMT_TEXT;
         break;
     case APPLICATION_FORMAT_VERSION:
-        *att_len = APPLICATION_FORMAT_VERSION_SIZE;
+        *att_len_max = APPLICATION_FORMAT_VERSION_SIZE;
         *att_format = FMT_ASCII;
         break;
     case MEDIUM_GLOBALLY_UNIQUE_IDENTIFIER:
-        *att_len = MEDIUM_GLOBALLY_UNIQUE_IDENTIFIER_SIZE;
+        *att_len_max = MEDIUM_GLOBALLY_UNIQUE_IDENTIFIER_SIZE;
         *att_format = FMT_BIN;
         break;
     case MEDIA_POOL_GLOBALLY_UNIQUE_IDENTIFIER:
-        *att_len = MEDIA_POOL_GLOBALLY_UNIQUE_IDENTIFIER_SIZE;
+        *att_len_max = MEDIA_POOL_GLOBALLY_UNIQUE_IDENTIFIER_SIZE;
         *att_format = FMT_BIN;
         break;
     default:
-        *att_len = 0;
+        *att_len_max = 0;
         *att_format = FMT_RESERVED;
         break;
     }
 }
 
-int att_write(int fd, uint16_t att_id, char* data, int verbose){
-
-    int ok;
-    sg_io_hdr_t io_hdr;
-    unsigned char sense_buffer[32];
-    uint8_t att_len;
-    uint8_t att_format;
+int att_write(int fd, uint16_t att_id, char* att, int verbose){
     
-    get_att_param(att_id, &att_len, &att_format);
-    if (att_len == 0) {
-        printf("ERROR: Attribute identifier not supported.\n");
-        return -1;
-    }
-
-    unsigned char wr_att_cmd_blk [WRITE_ATT_CMD_LEN] = {OP_CODE_WR_ATT, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, att_len + 9, 0, 0};
     uint8_t lsb_att_id = (att_id >> 0) & 0xFF;
     uint8_t msb_att_id = (att_id >> 8) & 0xFF;
 
-    if (verbose == 1) {
+    if (verbose) {
         printf("msb_att_id: %02x\n", msb_att_id);
         printf("lsb_att_id: %02x\n", lsb_att_id);
     }
 
-    unsigned char wr_att[169] = {0, 0, 0, att_len + 5, msb_att_id, lsb_att_id, att_format, 0, att_len};
+    uint8_t att_len_max;
+    uint8_t att_format;
 
-    if(strlen (data) > att_len ){
-        printf("ERROR: Message must not exceed %d bytes\n", att_len);
+    get_att_param(att_id, &att_len_max, &att_format);
+    if (att_len_max == 0) {
+        printf("ERROR: Attribute identifier not supported.\n");
         return -1;
-
-    } else {
-        strcpy((char*) & wr_att[9], data);
     }
 
+    uint8_t att_len = strlen(att);
+    if(att_len > att_len_max ){ 
+        printf("ERROR: Message must not exceed %d bytes\n", att_len_max);
+        return -1;
+    } else if (verbose) {
+        printf("Attribute length to write: %d bytes\n", att_len);
+    }
+
+    uint8_t allocation_len = att_len + 9;
+    uint8_t available_data = att_len + 5;
+    unsigned char wr_att_cmd_blk [CDB_LEN] = {OP_CODE_WR_ATT, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, allocation_len, 0, 0};
+    unsigned char wr_att[169] = {0, 0, 0, available_data, msb_att_id, lsb_att_id, att_format, 0, att_len};
+    strcpy((char*) & wr_att[9], att);
+    
+    sg_io_hdr_t io_hdr;
+    unsigned char sense_buffer[32];
     memset(&io_hdr, 0, sizeof(sg_io_hdr_t));
     io_hdr.interface_id = 'S';
     io_hdr.cmd_len = sizeof(wr_att_cmd_blk);
     io_hdr.mx_sb_len = sizeof(sense_buffer);
     io_hdr.dxfer_direction = SG_DXFER_TO_DEV;
-    io_hdr.dxfer_len = att_len + 9;
+    io_hdr.dxfer_len = allocation_len;
     io_hdr.dxferp = wr_att;
     io_hdr.cmdp = wr_att_cmd_blk;
     io_hdr.sbp = sense_buffer;
     io_hdr.timeout = 20000;  
-
 
     if (ioctl(fd, SG_IO, &io_hdr) < 0) {
         if(verbose)perror("SG_WRITE_ATT: SG_IO ioctl error");
@@ -178,7 +178,8 @@ int att_write(int fd, uint16_t att_id, char* data, int verbose){
         return -1;
     }
 
-    ok = 0;
+
+    int ok = 0;
     switch (sg_err_category3(&io_hdr)) {
     case SG_LIB_CAT_CLEAN:
         ok = 1;
@@ -202,11 +203,16 @@ int att_write(int fd, uint16_t att_id, char* data, int verbose){
 
 }
 
-int att_read(int fd, uint16_t att_id, char* data, int verbose){
+int att_read(int fd, uint16_t att_id, char* att, int verbose){
 
-    int ok;
-    sg_io_hdr_t io_hdr;
-    unsigned char sense_buffer[32];
+    uint8_t lsb_att_id = (att_id >> 0) & 0xFF; 
+    uint8_t msb_att_id = (att_id >> 8) & 0xFF;
+
+    if (verbose) {
+        printf("msb_att_id: %02x\n", msb_att_id);
+        printf("lsb_att_id: %02x\n", lsb_att_id);
+    }
+
     uint8_t att_len;
     uint8_t att_format;
 
@@ -214,20 +220,16 @@ int att_read(int fd, uint16_t att_id, char* data, int verbose){
     if (att_len == 0) {
         printf("ERROR: Attribute identifier not supported.\n");
         return -1;
+    } else if (verbose) {
+        printf("Attribute length to read: %d bytes\n", att_len);
     }
 
-    uint8_t lsb_att_id = (att_id >> 0) & 0xFF;
-    uint8_t msb_att_id = (att_id >> 8) & 0xFF;
-
-    if (verbose == 1) {
-        printf("msb_att_id: %02x\n", msb_att_id);
-        printf("lsb_att_id: %02x\n", lsb_att_id);
-    }
-
-    unsigned char rd_att_cmd_blk[READ_ATT_CMD_LEN] = {OP_CODE_RD_ATT, 0, 0, 0, 0, 0, 0, 0, msb_att_id, lsb_att_id, 0, 0, att_len + 9, 0, 0, 0};
-
+    uint8_t allocation_len = att_len + 9;
+    unsigned char rd_att_cmd_blk[CDB_LEN] = {OP_CODE_RD_ATT, 0, 0, 0, 0, 0, 0, 0, msb_att_id, lsb_att_id, 0, 0, 0, allocation_len, 0, 0};
     unsigned char in_Buff[READ_ATT_REPLY_LEN];
   
+    sg_io_hdr_t io_hdr;
+    unsigned char sense_buffer[32];
     memset(&io_hdr, 0, sizeof(sg_io_hdr_t));
     io_hdr.interface_id = 'S';
     io_hdr.cmd_len = sizeof(rd_att_cmd_blk);
@@ -245,7 +247,8 @@ int att_read(int fd, uint16_t att_id, char* data, int verbose){
         return -1;
     }
 
-    ok = 0;
+
+    int ok = 0;
     switch (sg_err_category3(&io_hdr)) {
     case SG_LIB_CAT_CLEAN:
         ok = 1;
@@ -264,7 +267,7 @@ int att_read(int fd, uint16_t att_id, char* data, int verbose){
 
     if (ok) {
         if(verbose)printf("SG_READ_ATT duration=%u millisecs, resid=%d, msg_status=%d\n", io_hdr.duration, io_hdr.resid, (int)io_hdr.msg_status);
-	strncpy(data, (char*) & in_Buff[9], att_len);
+	strncpy(att, (char*) & in_Buff[9], att_len);
     }
 
     return 0;
