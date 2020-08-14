@@ -77,8 +77,15 @@ apt-get install libsgutils2-dev gcc make
 ~~~
 
 ### CentOS
+CentOS7
 ~~~
-TBD
+yum install make gcc sg3_utils-devel
+~~~
+
+CentOS8
+~~~
+dnf install make gcc
+dnf --enablerepo=PowerTools install sg3_utils-devel
 ~~~
 
 ## Build & Install
