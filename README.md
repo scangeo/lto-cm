@@ -47,17 +47,17 @@ Usage:
   lto-cm [-f device] [-r Attribute Identifier]              : Read from MAM.
   lto-cm [-f device] [-w Attribute Identifier] [-m Message] : Write to MAM.
     Supported Attribute Identifier in Decimal:
-       2048:APPLICATION VENDOR                                2049:APPLICATION NAME
-       2050:APPLICATION VERSION                               2051:USER MEDIUM TEXT LABEL
-       2052:DATE AND TIME LAST WRITTEN                        2053:TEXT LOCALIZATION IDENTIFIER
-       2054:BARCODE                                           2055:OWNING HOST TEXTUAL NAME
-       2056:MEDIA POOL                                        2059:APPLICATION FORMAT VERSION
-       2080:MEDIUM GLOBALLY UNIQUE IDENTIFIER                 2081:MEDIA POOL GLOBALLY UNIQUE IDENTIFIER
-  lto-cm -h/?                                               : Display usage
-  -v                                                        : Increase verbosity
+       2048:APPLICATION VENDOR                 2049:APPLICATION NAME
+       2050:APPLICATION VERSION                2051:USER MEDIUM TEXT LABEL
+       2052:DATE AND TIME LAST WRITTEN         2053:TEXT LOCALIZATION IDENTIFIER
+       2054:BARCODE                            2055:OWNING HOST TEXTUAL NAME
+       2056:MEDIA POOL                         2059:APPLICATION FORMAT VERSION
+       2080:MEDIUM GLOBALLY UNIQUE IDENTIFIER  2081:MEDIA POOL GLOBALLY UNIQUE IDENTIFIER
+  lto-cm -h/? : Display usage
+  -v          : Increase verbosity
 Example:
-  lto-cm -f /dev/sg3 -r 2051                                : Read data from USER MEDIUM TEXT LABEL with /dev/sg3
-  lto-cm -f /dev/sg4 -w 2054 -m TAPE00L8                    : Write TAPE00L8 to BARCODE with /dev/sg4
+  lto-cm -f /dev/sg3 -r 2051             : Read data from USER MEDIUM TEXT LABEL with /dev/sg3
+  lto-cm -f /dev/sg4 -w 2054 -m TAPE00L8 : Write TAPE00L8 to BARCODE with /dev/sg4
 ~~~
 
 ## Required Packages
