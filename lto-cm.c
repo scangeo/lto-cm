@@ -57,7 +57,7 @@ static void usage() {
           "       2052:DATE AND TIME LAST WRITTEN         2053:TEXT LOCALIZATION IDENTIFIER\n"
           "       2054:BARCODE                            2055:OWNING HOST TEXTUAL NAME\n"
           "       2056:MEDIA POOL                         2059:APPLICATION FORMAT VERSION\n"
-          "       2080:MEDIUM GLOBALLY UNIQUE IDENTIFIER  2081:MEDIA POOL GLOBALLY UNIQUE IDENTIFIER\n"
+          //"       2080:MEDIUM GLOBALLY UNIQUE IDENTIFIER  2081:MEDIA POOL GLOBALLY UNIQUE IDENTIFIER\n"
           "  lto-cm -h/? : Display usage\n"
           "  -v          : Increase verbosity\n"
           "Example:\n"
