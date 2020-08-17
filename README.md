@@ -36,7 +36,7 @@ Since the idea of the orignal repository is great, I would like to support more 
 | 0x0808h | MEDIA POOL | 160 | TEXT |
 | 0x080Bh | APPLICATION FORMAT VERSION | 16 | ASCII |
 | 0x0820h | MEDIUM GLOBALLY UNIQUE IDENTIFIER | 36 | BINARY |
-| 0x0821h | MEDIA POOL MEDIA POOL GLOBALLY UNIQUE IDENTIFIER | 26 | BINARY |
+| 0x0821h | MEDIA POOL MEDIA POOL GLOBALLY UNIQUE IDENTIFIER | 36 | BINARY |
 
 ## Supported Distributions
 openSUSE/Debian/Ubuntu/CentOS
