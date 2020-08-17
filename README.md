@@ -49,7 +49,6 @@ Usage:
        2052:DATE AND TIME LAST WRITTEN         2053:TEXT LOCALIZATION IDENTIFIER
        2054:BARCODE                            2055:OWNING HOST TEXTUAL NAME
        2056:MEDIA POOL                         2059:APPLICATION FORMAT VERSION
-       2080:MEDIUM GLOBALLY UNIQUE IDENTIFIER  2081:MEDIA POOL GLOBALLY UNIQUE IDENTIFIER
   lto-cm -h/? : Display usage
   -v          : Increase verbosity
 Example:
