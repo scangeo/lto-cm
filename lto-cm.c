@@ -39,9 +39,9 @@
 #define READ_ATT_REPLY_LEN 512
 #define CDB_LEN 16
 
-#define FMT_BIN 0
-#define FMT_ASCII 1
-#define FMT_TEXT 2
+#define FMT_BIN      0
+#define FMT_ASCII    1
+#define FMT_TEXT     2
 #define FMT_RESERVED 3
 
 #define EBUFF_SZ 256
@@ -63,64 +63,62 @@ static void usage() {
           "Example:\n"
           "  lto-cm -f /dev/sg3 -r 2051             : Read data from USER MEDIUM TEXT LABEL with /dev/sg3\n"
           "  lto-cm -f /dev/sg4 -w 2054 -m TAPE00L8 : Write TAPE00L8 to BARCODE with /dev/sg4\n"
-          "Manual:\n"
-          "  There is no man page. Visit the original repo : https://github.com/Kevin-Nakamoto/lto-cm\n"
          );
 }
 
-static void get_att_param(uint16_t att_id, uint8_t *att_len_max, uint8_t *att_format) {
+static void get_att_param(uint16_t att_id, uint8_t *att_len, uint8_t *att_format) {
 
     switch (att_id) {
     case APPLICATION_VENDOR:
-        *att_len_max = APPLICATION_VENDOR_SIZE;
+        *att_len = APPLICATION_VENDOR_SIZE;
         *att_format = FMT_ASCII;
         break;
     case APPLICATION_NAME:
-        *att_len_max = APPLICATION_NAME_SIZE;
+        *att_len = APPLICATION_NAME_SIZE;
         *att_format = FMT_ASCII;
         break;
     case APPLICATION_VERSION:
-        *att_len_max = APPLICATION_VERSION_SIZE;
+        *att_len = APPLICATION_VERSION_SIZE;
         *att_format = FMT_ASCII;
         break;
     case USER_MEDIUM_TEXT_LABEL:
-        *att_len_max = USER_MEDIUM_TEXT_LABEL_SIZE;
+        *att_len = USER_MEDIUM_TEXT_LABEL_SIZE;
         *att_format = FMT_TEXT;
         break;
     case DATE_AND_TIME_LAST_WRITTEN:
-        *att_len_max = DATE_AND_TIME_LAST_WRITTEN_SIZE;
+        *att_len = DATE_AND_TIME_LAST_WRITTEN_SIZE;
         *att_format = FMT_ASCII;
         break;
     case TEXT_LOCALIZATION_IDENTIFIER:
-        *att_len_max = TEXT_LOCALIZATION_IDENTIFIER_SIZE;
+        *att_len = TEXT_LOCALIZATION_IDENTIFIER_SIZE;
         *att_format = FMT_BIN;
         break;
     case BARCODE:
-        *att_len_max = BARCODE_SIZE;
+        *att_len = BARCODE_SIZE;
         *att_format = FMT_ASCII;
         break;
     case OWNING_HOST_TEXTUAL_NAME:
-        *att_len_max = OWNING_HOST_TEXTUAL_NAME_SIZE;
+        *att_len = OWNING_HOST_TEXTUAL_NAME_SIZE;
         *att_format = FMT_TEXT;
         break;
     case MEDIA_POOL:
-        *att_len_max = MEDIA_POOL_SIZE;
+        *att_len = MEDIA_POOL_SIZE;
         *att_format = FMT_TEXT;
         break;
     case APPLICATION_FORMAT_VERSION:
-        *att_len_max = APPLICATION_FORMAT_VERSION_SIZE;
+        *att_len = APPLICATION_FORMAT_VERSION_SIZE;
         *att_format = FMT_ASCII;
         break;
     case MEDIUM_GLOBALLY_UNIQUE_IDENTIFIER:
-        *att_len_max = MEDIUM_GLOBALLY_UNIQUE_IDENTIFIER_SIZE;
+        *att_len = MEDIUM_GLOBALLY_UNIQUE_IDENTIFIER_SIZE;
         *att_format = FMT_BIN;
         break;
     case MEDIA_POOL_GLOBALLY_UNIQUE_IDENTIFIER:
-        *att_len_max = MEDIA_POOL_GLOBALLY_UNIQUE_IDENTIFIER_SIZE;
+        *att_len = MEDIA_POOL_GLOBALLY_UNIQUE_IDENTIFIER_SIZE;
         *att_format = FMT_BIN;
         break;
     default:
-        *att_len_max = 0;
+        *att_len = 0;
         *att_format = FMT_RESERVED;
         break;
     }
@@ -136,27 +134,35 @@ int att_write(int fd, uint16_t att_id, char* att, int verbose){
         printf("lsb_att_id: %02x\n", lsb_att_id);
     }
 
-    uint8_t att_len_max;
+    uint8_t att_len;
     uint8_t att_format;
 
-    get_att_param(att_id, &att_len_max, &att_format);
-    if (att_len_max == 0) {
+    get_att_param(att_id, &att_len, &att_format);
+    if (att_len == 0) {
         printf("ERROR: Attribute identifier not supported.\n");
         return -1;
+    } else if (verbose) {
+        printf("Attribute length: %d bytes\n", att_len);
+        printf("Attribute format (0:BINARY, 1:ASCII, 2:TEXT): %d\n", att_format);
     }
 
-    uint8_t att_len = strlen(att);
-    if(att_len > att_len_max ){ 
-        printf("ERROR: Message must not exceed %d bytes\n", att_len_max);
+    uint8_t input_len = strlen(att);
+    if(input_len > att_len ){ 
+        printf("ERROR: Message must not exceed %d bytes\n", att_len);
         return -1;
     } else if (verbose) {
-        printf("Attribute length to write: %d bytes\n", att_len);
+        printf("Attribute input length: %d bytes\n", input_len);
     }
 
     uint8_t allocation_len = att_len + 9;
-    uint8_t available_data = att_len + 5;
     unsigned char wr_att_cmd_blk [CDB_LEN] = {OP_CODE_WR_ATT, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, allocation_len, 0, 0};
-    unsigned char wr_att[169] = {0, 0, 0, available_data, msb_att_id, lsb_att_id, att_format, 0, att_len};
+
+    unsigned char *wr_att = calloc(allocation_len, sizeof(char));
+    wr_att[3] = att_len + 5;
+    wr_att[4] = msb_att_id;
+    wr_att[5] = lsb_att_id;
+    wr_att[6] = att_format;
+    wr_att[8] = att_len;
     strcpy((char*) & wr_att[9], att);
     
     sg_io_hdr_t io_hdr;
@@ -170,14 +176,16 @@ int att_write(int fd, uint16_t att_id, char* att, int verbose){
     io_hdr.dxferp = wr_att;
     io_hdr.cmdp = wr_att_cmd_blk;
     io_hdr.sbp = sense_buffer;
-    io_hdr.timeout = 20000;  
+    io_hdr.timeout = 20000;
 
-    if (ioctl(fd, SG_IO, &io_hdr) < 0) {
+    int res = ioctl(fd, SG_IO, &io_hdr);
+    free(wr_att);
+
+    if (res < 0) {
         if(verbose)perror("SG_WRITE_ATT: SG_IO ioctl error");
         close(fd);
         return -1;
     }
-
 
     int ok = 0;
     switch (sg_err_category3(&io_hdr)) {
@@ -196,7 +204,7 @@ int att_write(int fd, uint16_t att_id, char* att, int verbose){
     }
 
     if (ok) {
-        if(verbose)printf("SG_WRITE_ATT duration=%u millisecs, resid=%d, msg_status=%d\n", io_hdr.duration, io_hdr.resid, (int)io_hdr.msg_status);
+        if(verbose)printf("SG_WRITE_ATT duration = %u millisecs, resid = %d, msg_status = %d\n", io_hdr.duration, io_hdr.resid, (int)io_hdr.msg_status);
     }
 
     return 0;
@@ -247,7 +255,6 @@ int att_read(int fd, uint16_t att_id, char* att, int verbose){
         return -1;
     }
 
-
     int ok = 0;
     switch (sg_err_category3(&io_hdr)) {
     case SG_LIB_CAT_CLEAN:
@@ -266,7 +273,7 @@ int att_read(int fd, uint16_t att_id, char* att, int verbose){
     }
 
     if (ok) {
-        if(verbose)printf("SG_READ_ATT duration=%u millisecs, resid=%d, msg_status=%d\n", io_hdr.duration, io_hdr.resid, (int)io_hdr.msg_status);
+        if(verbose)printf("SG_READ_ATT duration = %u millisecs, resid = %d, msg_status = %d\n", io_hdr.duration, io_hdr.resid, (int)io_hdr.msg_status);
 	strncpy(att, (char*) & in_Buff[9], att_len);
     }
 
