@@ -23,7 +23,7 @@ This lto-cm is a software wrapper sending the SCSI command above to the drive.
 Since the idea of the orignal repository is great, I would like to support more CM fields to be written/read. Indeed, the orginal repository can read/write data to "USER MEDIUM TEXT LABEL" feild only. There are many other fileds avilable for client, such as "DATE AND TIME LAST WRITTEN", "BARCODE" and "MEDIA POOL" etc... which are useful for asset management of tape media. Also, I will support more Linux distribtuions such as Debian/Ubuntu/CentOS/SUSE. I make this repository active as much as possible. 
 
 ## Supported Attributes
-| Attribute Identifier | Name | Length | Format |
+| Attribute Identifier | Name | Length (Bytes) | Format |
 | ------------- | ------------- | ------------- | ------------- |
 | 0x0800h | APPLICATION VENDOR | 8 | ASCII |
 | 0x0801h | APPLICATION NAME | 32 | ASCII |
