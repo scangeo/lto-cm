@@ -30,10 +30,9 @@ This lto-cm is a software wrapper sending the SCSI command above to the drive.
 | 0x0807h | OWNING HOST TEXTUAL NAME | 80 | TEXT |
 | 0x0808h | MEDIA POOL | 160 | TEXT |
 | 0x080Bh | APPLICATION FORMAT VERSION | 16 | ASCII |
-<!--
 |0x0820h | MEDIUM GLOBALLY UNIQUE IDENTIFIER | 36 | BINARY |
 | 0x0821h | MEDIA POOL MEDIA POOL GLOBALLY UNIQUE IDENTIFIER | 36 | BINARY |
--->
+
 
 ## Supported Distributions
 openSUSE/Debian/Ubuntu/CentOS
@@ -49,6 +48,7 @@ Usage:
        2052:DATE AND TIME LAST WRITTEN         2053:TEXT LOCALIZATION IDENTIFIER
        2054:BARCODE                            2055:OWNING HOST TEXTUAL NAME
        2056:MEDIA POOL                         2059:APPLICATION FORMAT VERSION
+       2080:MEDIUM GLOBALLY UNIQUE IDENTIFIER  2081:MEDIA POOL GLOBALLY UNIQUE IDENTIFIER
   lto-cm -h/? : Display usage
   -v          : Increase verbosity
 Example:
