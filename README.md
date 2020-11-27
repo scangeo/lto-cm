@@ -10,12 +10,12 @@ $ sudo lto-cm -f /dev/sg3 -r 2051
 TEST
 ~~~
 
-## What is LTO-CM and How to Communicate?
-Every LTO media has a RFID chip inside the cartridge shell. This LTO-CM has 4kB - 16kB of capacity depending on LTO generation, which stores some attributes related to drive, media and host. Indeed, there are three types for these attributes: Device, Medium and Host. Device and Medium are read-only from the client and only tape drive can write data. Host type attributes are writable from the client, and these fields shall be communicated via protocols below. 
+## How to Communicate?
+Every LTO media has a RFID chip inside the cartridge shell. This LTO-CM has 4kB - 16kB of capacity depending on LTO generation, which stores some attributes related to drive, media and host. There are three types for these attributes: Device, Medium and Host. Device and Medium attributes are read-only from the client and only tape drive can write data. Host type attributes are writable from the client, and these fields shall be communicated via the protocols shown below. 
 
 (Client) <-(SCSI Command: READ/WRITE ATTRIBUTE)-> (Tape Drive) <-> (RFID Card Reader/Writer in the Drive) <-(ISO14443a-based RFID Command, 13.56MHz)-> (LTO-CM)
 
-This lto-cm is a software wrapper sending the SCSI command above to the drive.
+This lto-cm is a software wrapper sending the SCSI command to the drive.
 
 ## Supported Attributes
 | Attribute Identifier | Name | Length (Bytes) | Format |
