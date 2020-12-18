@@ -92,8 +92,12 @@ dnf --enablerepo=PowerTools install sg3_utils-devel
 ## Uninstall
 - `sudo make uninstall`
 
+## IBM 3592 CM-Chip
+This software should work with IBM 3592 drive/cartridge because LTO and 3592 use the same SCSI command to manipulate CM-chip information.
+
 ## See Also
-- [LTO SCSI Reference](https://render-prd-trops.events.ibm.com/sites/default/files/support/ssg/ssgdocs.nsf/0/4d430d4b4e1f09b18525787300607b1d/%24FILE/LTO%20SCSI%20Reference%20%28EXTERNAL%20-%2020171024%29.pdf) for SCSI command
+- [LTO SCSI Reference](https://render-prd-trops.events.ibm.com/sites/default/files/support/ssg/ssgdocs.nsf/0/4d430d4b4e1f09b18525787300607b1d/%24FILE/LTO%20SCSI%20Reference%20%28EXTERNAL%20-%2020171024%29.pdf) for LTO SCSI command
+- [3592 SCSI Reference](https://render-prd-trops.events.ibm.com/sites/default/files/inline-files/$FILE/3592%20SCSI%20Reference%20(EXTERNAL)_3.pdf) for IBM 3592 SCSI command
 - [LTO-1 Specification](https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-319.pdf) for RFID command
 
 ## License
