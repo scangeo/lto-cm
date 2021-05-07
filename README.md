@@ -1,5 +1,5 @@
 # lto-cm
-Read and write the text attribute of a Linear Tape Open cartridge memory (LTO-CM) chip, also called Medium Access Memory (MAM).
+Read and write data to the text attribute field of a Linear Tape Open cartridge memory (LTO-CM) chip, also called Medium Access Memory (MAM).
 
 ## Demo
 Write a text message (TEST) to USER MEDIUM TEXT LABEL attribute (Address 2051 in decimal), and then verify that with read command.
@@ -11,11 +11,7 @@ TEST
 ~~~
 
 ## How to Communicate?
-Every LTO media has a RFID chip inside the cartridge shell. This LTO-CM has 4kB - 16kB of capacity depending on LTO generation, which stores some attributes related to drive, media and host. There are three types for these attributes: Device, Medium and Host. Device and Medium attributes are read-only from the client and only tape drive can write data. Host type attributes are writable from the client, and these fields shall be communicated via the protocols shown below. 
-
-(Client) <-(SCSI Command: READ/WRITE ATTRIBUTE)-> (Tape Drive) <-> (RFID Card Reader/Writer in the Drive) <-(ISO14443a-based RFID Command, 13.56MHz)-> (LTO-CM)
-
-This lto-cm is a software wrapper sending the SCSI command to the drive.
+Every LTO media has a RFID chip inside the cartridge shell. This LTO-CM has 4kB - 16kB of capacity depending on LTO generation, which stores some attributes related to drive, media and host. There are three types of attributes: Device, Medium and Host. Device and Medium attributes are read-only and only tape drive can write data to this field. Host type attributes are writable from the client. 
 
 ## Supported Attributes
 | Attribute Identifier | Name | Length (Bytes) | Format |
@@ -93,7 +89,7 @@ dnf --enablerepo=PowerTools install sg3_utils-devel
 - `sudo make uninstall`
 
 ## IBM 3592 CM-Chip
-This software should work with IBM 3592 drive/cartridge because LTO and 3592 use the same SCSI command to manipulate CM-chip information.
+This software should work with IBM 3592 drive/cartridge because LTO and 3592 use the same SCSI command to manipulate MAM information.
 
 ## See Also
 - [LTO SCSI Reference](https://render-prd-trops.events.ibm.com/sites/default/files/support/ssg/ssgdocs.nsf/0/4d430d4b4e1f09b18525787300607b1d/%24FILE/LTO%20SCSI%20Reference%20%28EXTERNAL%20-%2020171024%29.pdf) for LTO SCSI command
