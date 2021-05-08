@@ -3,288 +3,407 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include "sg_lib.h"
-#include "sg_io_linux.h"
+#include "scsi/sg_io_linux.h"
 #include "lto-cm.h"
 
-struct globalArgs_t {
-	int verbose;
-	const char* device_name;
-	int readopt;
-	int writeopt;
-	char* msg;
-} globalArgs;
+#define APPLICATION_VENDOR                          0x0800
+#define APPLICATION_NAME                            0x0801
+#define APPLICATION_VERSION                         0x0802
+#define USER_MEDIUM_TEXT_LABEL                      0x0803
+#define DATE_AND_TIME_LAST_WRITTEN                  0x0804
+#define TEXT_LOCALIZATION_IDENTIFIER                0x0805
+#define BARCODE                                     0x0806
+#define OWNING_HOST_TEXTUAL_NAME                    0x0807
+#define MEDIA_POOL                                  0x0808
+#define APPLICATION_FORMAT_VERSION                  0x080B
+#define MEDIUM_GLOBALLY_UNIQUE_IDENTIFIER           0x0820
+#define MEDIA_POOL_GLOBALLY_UNIQUE_IDENTIFIER       0x0821
 
-//---------------Usage--------------
-static void usage()
-{
+#define APPLICATION_VENDOR_SIZE                     8
+#define APPLICATION_NAME_SIZE                       32
+#define APPLICATION_VERSION_SIZE                    8
+#define USER_MEDIUM_TEXT_LABEL_SIZE                 160
+#define DATE_AND_TIME_LAST_WRITTEN_SIZE             12
+#define TEXT_LOCALIZATION_IDENTIFIER_SIZE           1
+#define BARCODE_SIZE                                32
+#define OWNING_HOST_TEXTUAL_NAME_SIZE               80
+#define MEDIA_POOL_SIZE                             160
+#define APPLICATION_FORMAT_VERSION_SIZE             16
+#define MEDIUM_GLOBALLY_UNIQUE_IDENTIFIER_SIZE      36
+#define MEDIA_POOL_GLOBALLY_UNIQUE_IDENTIFIER_SIZE  36
+
+#define OP_CODE_WR_ATT 0x8D
+#define OP_CODE_RD_ATT 0x8C
+
+#define READ_ATT_REPLY_LEN 512
+#define CDB_LEN 16
+
+#define FMT_BIN      0
+#define FMT_ASCII    1
+#define FMT_TEXT     2
+#define FMT_RESERVED 3
+
+#define EBUFF_SZ 256
+
+static void usage() {
     fprintf(stderr, 
-          "LTO-3/LTO-4 Medium Access Memory tool for User Medium Text Label\n"
-          "Usage: \n"
-          "lto-cm -f device -r/w [\"message\"] [-v]\n"
-          " where:\n"
-          "    -f device        is a sg device                        \n"
-          "    -r/w             read OR write\n"
-          "                     if \'w\': \"message to write\" (160 bytes)\n"
-          "    -v               increase verbosity \n"
-          "    -h/?             display usage\n"
+          "Usage:\n"
+          "  lto-cm [-f device] [-r Attribute Identifier]              : Read from MAM.\n"
+          "  lto-cm [-f device] [-w Attribute Identifier] [-m Message] : Write to MAM.\n"
+          "    Supported Attribute Identifier in Decimal:\n"
+          "       2048:APPLICATION VENDOR                 2049:APPLICATION NAME\n"
+          "       2050:APPLICATION VERSION                2051:USER MEDIUM TEXT LABEL\n"
+          "       2052:DATE AND TIME LAST WRITTEN         2053:TEXT LOCALIZATION IDENTIFIER\n"
+          "       2054:BARCODE                            2055:OWNING HOST TEXTUAL NAME\n"
+          "       2056:MEDIA POOL                         2059:APPLICATION FORMAT VERSION\n"
+          "       2080:MEDIUM GLOBALLY UNIQUE IDENTIFIER  2081:MEDIA POOL GLOBALLY UNIQUE IDENTIFIER\n"
+          "  lto-cm -h/? : Display usage\n"
+          "  -v          : Increase verbosity\n"
+          "Example:\n"
+          "  lto-cm -f /dev/sg3 -r 2051             : Read data from USER MEDIUM TEXT LABEL with /dev/sg3\n"
+          "  lto-cm -f /dev/sg4 -w 2054 -m TAPE00L8 : Write TAPE00L8 to BARCODE with /dev/sg4\n"
          );
 }
 
-//------------------------------WRITE 0803 FUNCTION---------------------------------
-int att_0803_write(int fd, char* data){
-    int ok;
+static void get_att_param(uint16_t att_id, uint8_t *att_len, uint8_t *att_format) {
+
+    switch (att_id) {
+    case APPLICATION_VENDOR:
+        *att_len = APPLICATION_VENDOR_SIZE;
+        *att_format = FMT_ASCII;
+        break;
+    case APPLICATION_NAME:
+        *att_len = APPLICATION_NAME_SIZE;
+        *att_format = FMT_ASCII;
+        break;
+    case APPLICATION_VERSION:
+        *att_len = APPLICATION_VERSION_SIZE;
+        *att_format = FMT_ASCII;
+        break;
+    case USER_MEDIUM_TEXT_LABEL:
+        *att_len = USER_MEDIUM_TEXT_LABEL_SIZE;
+        *att_format = FMT_TEXT;
+        break;
+    case DATE_AND_TIME_LAST_WRITTEN:
+        *att_len = DATE_AND_TIME_LAST_WRITTEN_SIZE;
+        *att_format = FMT_ASCII;
+        break;
+    case TEXT_LOCALIZATION_IDENTIFIER:
+        *att_len = TEXT_LOCALIZATION_IDENTIFIER_SIZE;
+        *att_format = FMT_BIN;
+        break;
+    case BARCODE:
+        *att_len = BARCODE_SIZE;
+        *att_format = FMT_ASCII;
+        break;
+    case OWNING_HOST_TEXTUAL_NAME:
+        *att_len = OWNING_HOST_TEXTUAL_NAME_SIZE;
+        *att_format = FMT_TEXT;
+        break;
+    case MEDIA_POOL:
+        *att_len = MEDIA_POOL_SIZE;
+        *att_format = FMT_TEXT;
+        break;
+    case APPLICATION_FORMAT_VERSION:
+        *att_len = APPLICATION_FORMAT_VERSION_SIZE;
+        *att_format = FMT_ASCII;
+        break;
+    case MEDIUM_GLOBALLY_UNIQUE_IDENTIFIER:
+        *att_len = MEDIUM_GLOBALLY_UNIQUE_IDENTIFIER_SIZE;
+        *att_format = FMT_BIN;
+        break;
+    case MEDIA_POOL_GLOBALLY_UNIQUE_IDENTIFIER:
+        *att_len = MEDIA_POOL_GLOBALLY_UNIQUE_IDENTIFIER_SIZE;
+        *att_format = FMT_BIN;
+        break;
+    default:
+        *att_len = 0;
+        *att_format = FMT_RESERVED;
+        break;
+    }
+}
+
+int att_write(int fd, uint16_t att_id, char* att, int verbose){
+    
+    uint8_t lsb_att_id = (att_id >> 0) & 0xFF;
+    uint8_t msb_att_id = (att_id >> 8) & 0xFF;
+
+    if (verbose) {
+        printf("msb_att_id: %02x\n", msb_att_id);
+        printf("lsb_att_id: %02x\n", lsb_att_id);
+    }
+
+    uint8_t att_len;
+    uint8_t att_format;
+
+    get_att_param(att_id, &att_len, &att_format);
+    if (att_len == 0) {
+        printf("ERROR: Attribute identifier not supported.\n");
+        return -1;
+    } else if (verbose) {
+        printf("Attribute length: %d bytes\n", att_len);
+        printf("Attribute format (0:BINARY, 1:ASCII, 2:TEXT): %d\n", att_format);
+    }
+
+    uint8_t input_len = strlen(att);
+    if(input_len > att_len ){ 
+        printf("ERROR: Message must not exceed %d bytes\n", att_len);
+        return -1;
+    } else if (verbose) {
+        printf("Attribute input length: %d bytes\n", input_len);
+    }
+
+    uint8_t allocation_len = att_len + 9;
+    unsigned char wr_att_cmd_blk [CDB_LEN] = {OP_CODE_WR_ATT, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, allocation_len, 0, 0};
+
+    unsigned char *wr_att = calloc(allocation_len, sizeof(char));
+    wr_att[3] = att_len + 5;
+    wr_att[4] = msb_att_id;
+    wr_att[5] = lsb_att_id;
+    wr_att[6] = att_format;
+    wr_att[8] = att_len;
+    strcpy((char*) & wr_att[9], att);
+    
     sg_io_hdr_t io_hdr;
-    unsigned char WrAttCmdBlk [WRITE_ATT_CMD_LEN] = {0x8D, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 169, 0, 0};
     unsigned char sense_buffer[32];
-    unsigned char Wr_Att[169] = {0,0,0,165,0x08,0x03,2,0,160};
-
-  //  if(att_0805_write(fd)==-1){ if(globalArgs.verbose)printf("SG_WRITE_ATT_0803: Error on SG_WRITE_ATT_0805\n");return -1;}
-
-    if(strlen (data) > 160 ){ printf("ERROR : String must not Exceed 160 Bytes\n"); return -1;}
-    else{strcpy( (char*)&Wr_Att[9], data );}
-
-
     memset(&io_hdr, 0, sizeof(sg_io_hdr_t));
     io_hdr.interface_id = 'S';
-    io_hdr.cmd_len = sizeof(WrAttCmdBlk);
+    io_hdr.cmd_len = sizeof(wr_att_cmd_blk);
     io_hdr.mx_sb_len = sizeof(sense_buffer);
     io_hdr.dxfer_direction = SG_DXFER_TO_DEV;
-    io_hdr.dxfer_len = 169;
-    io_hdr.dxferp = Wr_Att;
-    io_hdr.cmdp = WrAttCmdBlk;
+    io_hdr.dxfer_len = allocation_len;
+    io_hdr.dxferp = wr_att;
+    io_hdr.cmdp = wr_att_cmd_blk;
     io_hdr.sbp = sense_buffer;
-    io_hdr.timeout = 20000;  
+    io_hdr.timeout = 20000;
 
+    int res = ioctl(fd, SG_IO, &io_hdr);
+    free(wr_att);
 
-    if (ioctl(fd, SG_IO, &io_hdr) < 0) {
-        if(globalArgs.verbose)perror("SG_WRITE_ATT_0803: Inquiry SG_IO ioctl error");
+    if (res < 0) {
+        if(verbose)perror("SG_WRITE_ATT: SG_IO ioctl error");
         close(fd);
         return -1;
     }
 
-    ok = 0;
+    int ok = 0;
     switch (sg_err_category3(&io_hdr)) {
     case SG_LIB_CAT_CLEAN:
         ok = 1;
         break;
+
     case SG_LIB_CAT_RECOVERED:
-        if(globalArgs.verbose)printf("Recovered error on SG_WRITE_ATT_0803, continuing\n");
+        if(verbose)printf("Recovered error on SG_WRITE_ATT, continuing\n");
         ok = 1;
         break;
-    default: /* won't bother decoding other categories */
-        if(globalArgs.verbose)sg_chk_n_print3("SG_WRITE_ATT_0803 command error", &io_hdr, 1);
+
+    default:
+        if(verbose)sg_chk_n_print3("SG_WRITE_ATT command error", &io_hdr, 1);
         return -1;
     }
 
-    if (ok) { /* output result if it is available */
-        if(globalArgs.verbose)printf("SG_WRITE_ATT_0803 duration=%u millisecs, resid=%d, msg_status=%d\n",
-               io_hdr.duration, io_hdr.resid, (int)io_hdr.msg_status);
+    if (ok) {
+        if(verbose)printf("SG_WRITE_ATT duration = %u millisecs, resid = %d, msg_status = %d\n", io_hdr.duration, io_hdr.resid, (int)io_hdr.msg_status);
     }
 
-return 0;
+    return 0;
+
 }
 
+int att_read(int fd, uint16_t att_id, char* att, int verbose){
 
-//-----------------------------READ 0803 FUNCTION---------------------------------
-int att_0803_read(int fd, char* data){
-    int ok;
-    unsigned char rAttCmdBlk[READ_ATT_CMD_LEN] = {0x8C, 0x00, 0, 0, 0, 0, 0, 0, 0x08, 0x03, 0, 0, 159,0, 0, 0};
-    unsigned char inBuff[READ_ATT_REPLY_LEN];
-    unsigned char sense_buffer[32];
-    sg_io_hdr_t io_hdr;
+    uint8_t lsb_att_id = (att_id >> 0) & 0xFF; 
+    uint8_t msb_att_id = (att_id >> 8) & 0xFF;
 
+    if (verbose) {
+        printf("msb_att_id: %02x\n", msb_att_id);
+        printf("lsb_att_id: %02x\n", lsb_att_id);
+    }
+
+    uint8_t att_len;
+    uint8_t att_format;
+
+    get_att_param(att_id, &att_len, &att_format);
+    if (att_len == 0) {
+        printf("ERROR: Attribute identifier not supported.\n");
+        return -1;
+    } else if (verbose) {
+        printf("Attribute length to read: %d bytes\n", att_len);
+    }
+
+    uint8_t allocation_len = att_len + 9;
+    unsigned char rd_att_cmd_blk[CDB_LEN] = {OP_CODE_RD_ATT, 0, 0, 0, 0, 0, 0, 0, msb_att_id, lsb_att_id, 0, 0, 0, allocation_len, 0, 0};
+    unsigned char in_Buff[READ_ATT_REPLY_LEN];
   
+    sg_io_hdr_t io_hdr;
+    unsigned char sense_buffer[32];
     memset(&io_hdr, 0, sizeof(sg_io_hdr_t));
     io_hdr.interface_id = 'S';
-    io_hdr.cmd_len = sizeof(rAttCmdBlk);
+    io_hdr.cmd_len = sizeof(rd_att_cmd_blk);
     io_hdr.mx_sb_len = sizeof(sense_buffer);
     io_hdr.dxfer_direction = SG_DXFER_FROM_DEV;
     io_hdr.dxfer_len = READ_ATT_REPLY_LEN;
-    io_hdr.dxferp = inBuff;
-    io_hdr.cmdp = rAttCmdBlk;
+    io_hdr.dxferp = in_Buff;
+    io_hdr.cmdp = rd_att_cmd_blk;
     io_hdr.sbp = sense_buffer;
     io_hdr.timeout = 20000;     
 
     if (ioctl(fd, SG_IO, &io_hdr) < 0) {
-        if(globalArgs.verbose)perror("SG_READ_ATT_0803: Inquiry SG_IO ioctl error");
+        if(verbose)perror("SG_READ_ATT: SG_IO ioctl error");
         close(fd);
         return -1;
     }
 
-    ok = 0;
+    int ok = 0;
     switch (sg_err_category3(&io_hdr)) {
     case SG_LIB_CAT_CLEAN:
         ok = 1;
         break;
+
     case SG_LIB_CAT_RECOVERED:
-        if(globalArgs.verbose)printf("Recovered error on SG_READ_ATT_0803, continuing\n");
+        if(verbose)printf("Recovered error on SG_READ_ATT, continuing\n");
         ok = 1;
         break;
-    default: /* won't bother decoding other categories */
-	printf("ERROR : Attribute 0803h doesn't exist yet, perform a write first\n");
-        if(globalArgs.verbose)sg_chk_n_print3("SG_READ_ATT_0803 command error", &io_hdr, 1);
+
+    default:
+	printf("ERROR: Attribute does not exist yet. Perform write first.\n");
+        if(verbose)sg_chk_n_print3("SG_READ_ATT command error", &io_hdr, 1);
         return -1;
     }
 
-    if (ok) { /* output result if it is available */
+    if (ok) {
+        if(verbose)printf("SG_READ_ATT duration = %u millisecs, resid = %d, msg_status = %d\n", io_hdr.duration, io_hdr.resid, (int)io_hdr.msg_status);
+	strncpy(att, (char*) & in_Buff[9], att_len);
+    }
 
-        if(globalArgs.verbose)printf("SG_READ_ATT_0803 duration=%u millisecs, resid=%d, msg_status=%d\n",
-               io_hdr.duration, io_hdr.resid, (int)io_hdr.msg_status);
+    return 0;
 
-	strncpy( data, (char*)&inBuff[9],160 );
- 	}
-
-return 0;
 }
 
-
-//----------------------------- MAIN FUNCTION---------------------------------
 int main(int argc, char * argv[])
 {
+    struct args_t {
+        int verbose;
+        const char* device_name;
+        int read_opt;
+        int write_opt;
+        uint16_t att_id;
+        char* msg;
+    } args;
+
     int sg_fd;
-    int k,i,l;
+    int k, i, l;
     char * file_name = 0;
     char ebuff[EBUFF_SZ];
     char messageout[160] ;
-    int c=0;
-
-   globalArgs.verbose=0;
-   globalArgs.device_name=NULL;
-   globalArgs.readopt=0;
-   globalArgs.writeopt=0;
-   globalArgs.msg=NULL;
-
-    while (1) {
    
-        c = getopt(argc, argv, "f:rw:h?v");
+    args.verbose = 0;
+    args.device_name = NULL;
+    args.read_opt = 0;
+    args.write_opt = 0;
+    args.att_id = 0;
+    args.msg = NULL;
 
-        if (c == -1)
-            break;
+    int c = 0;
+    while ((c = getopt(argc, argv, "f:r:w:m:h?v")) != -1) {
 
         switch (c) {
         case 'f':
-             if ((globalArgs.device_name=(char*)optarg)==NULL) {
- 		fprintf(stderr, "ERROR : Specify a device\n");
-		usage();
-                return SG_LIB_SYNTAX_ERROR;
-            }
+            args.device_name = (char*)optarg;
             break;
+
         case 'r':
-	    globalArgs.readopt =1;
+	    args.read_opt = 1;
+            args.att_id = atoi(optarg);
             break;
             
         case 'w':
-	    globalArgs.writeopt =1;
-	    if ((globalArgs.msg=(char*)optarg)==NULL) {
-	    	fprintf(stderr, "ERROR : Specify a message\n");
-	    	usage();
-	    	return SG_LIB_SYNTAX_ERROR;
-	    }
+            args.write_opt = 1;
+            args.att_id = atoi(optarg);
             break;
-              	
+        case 'm':
+            args.msg = (char*)optarg;
+            break;
+
         case 'h':
         case '?':
             usage();
             return 0;
-  /*      case 'm':
-          if ((globalArgs.msg=(char*)optarg)==NULL) {
- 		fprintf(stderr, "ERROR : Specify a message\n");
-		usage();
-                return SG_LIB_SYNTAX_ERROR;
-            }
-            break;*/
+
         case 'v':
-            ++globalArgs.verbose;
+            ++args.verbose;
             break;
+
         default:
-            fprintf(stderr, "ERROR : Unrecognised option code 0x%x ??\n", c);
+            fprintf(stderr, "ERROR: Unrecognised option code 0x%x ??\n", c);
             usage();
             return SG_LIB_SYNTAX_ERROR;
         }
-        
     }
 
     if (argc == 1) {
        	usage();
      	return 1;
-    }	
-
-	if (optind < argc) {
-            for (; optind < argc; ++optind)
-                fprintf(stderr, "ERROR : Unexpected extra argument: %s\n",
-                        argv[optind]);
-            usage();
-            return SG_LIB_SYNTAX_ERROR;
-        }
-        
-	if(!(globalArgs.device_name)){
-		usage();
-                return SG_LIB_SYNTAX_ERROR;
-	}
+    }
 	
-	if((globalArgs.readopt)&&(globalArgs.writeopt)){
- 		fprintf(stderr, "ERROR : Can't read AND write\n");
-		usage();
-                return SG_LIB_SYNTAX_ERROR;
-	}
+    if((args.read_opt) && (args.write_opt)){
+        fprintf(stderr, "ERROR: Can't read and write at the same time.\n");
+        usage();
+        return SG_LIB_SYNTAX_ERROR;
+    }
 
-	if(!((globalArgs.readopt)||(globalArgs.writeopt))){
- 		fprintf(stderr, "ERROR : Specify read OR Write operation\n");
-		usage();
-                return SG_LIB_SYNTAX_ERROR;
-	}
-	if((globalArgs.writeopt)&&(globalArgs.msg==NULL)){
- 		fprintf(stderr, "ERROR : Message is missing\n");
-		usage();
-                return SG_LIB_SYNTAX_ERROR;
-	}
-	
-	if((globalArgs.readopt)&&(globalArgs.msg!=NULL)){
- 		fprintf(stderr, "ERROR : Unexpected extra argument\n");
-		usage();
-                return SG_LIB_SYNTAX_ERROR;
-	}
+    if(!((args.read_opt) || (args.write_opt))){
+        fprintf(stderr, "ERROR: Specify read or write operation.\n");
+        usage();
+        return SG_LIB_SYNTAX_ERROR;
+    }
+
+    if((args.write_opt) && (args.msg==NULL)){
+        fprintf(stderr, "ERROR: Message is missing.\n");
+        usage();
+        return SG_LIB_SYNTAX_ERROR;
+    }
  
-    if ((sg_fd = open(globalArgs.device_name, O_RDWR)) < 0) {
-        snprintf(ebuff, EBUFF_SZ,
-                 "ERROR : opening file: %s", file_name);
+    if ((sg_fd = open(args.device_name, O_RDWR)) < 0) {
+        snprintf(ebuff, EBUFF_SZ, "ERROR: Opening file: %s", file_name);
         perror(ebuff);
         return -1;
     }
-    /* Just to be safe, check we have a new sg device by trying an ioctl */
+
     if ((ioctl(sg_fd, SG_GET_VERSION_NUM, &k) < 0) || (k < 30000)) {
-        printf("ERROR :  %s doesn't seem to be an new sg device\n",
-               globalArgs.device_name);
+        printf("ERROR: %s doesn't seem to be sg device.\n", args.device_name);
         close(sg_fd);
         return -1;
     }
 
 
-	if (globalArgs.readopt){
-		if(att_0803_read(sg_fd,messageout)==-1){
-			printf("ERROR : Read failed (try verbose opt)\n");
-			close(sg_fd);return -1;}
-		l=strlen (messageout);
-		for ( i = 0; i < l; ++i ){printf("%c", messageout[i]);}
-		printf("\n");
-	}
-	else if(globalArgs.writeopt){
-		if(att_0803_write(sg_fd,globalArgs.msg)==-1){
-			printf("ERROR : Write failed (try verbose opt)\n");
-			close(sg_fd);return -1;}
-	}
+    if (args.read_opt){
+        if(att_read(sg_fd, args.att_id, messageout, args.verbose) == -1) {
+            printf("ERROR: Read failed. Try verbose option.\n");
+            close(sg_fd);
+            return -1;
+        }
 
-    else {
-    fprintf(stderr, "ERROR : Unavailable Attribute, retry tomorrow\n");
-	    return SG_LIB_SYNTAX_ERROR;
-	}
+        l = strlen (messageout);
+
+	for (i = 0; i < l; ++i ){
+            printf("%c", messageout[i]);
+        }
+
+	printf("\n");
+    }
+
+    if(args.write_opt) {
+        if(att_write(sg_fd, args.att_id, args.msg, args.verbose) == -1) {
+            printf("ERROR: Write failed. Try verbose option.\n");
+            close(sg_fd);
+            return -1;
+        }
+    }
 
     close(sg_fd);
     return 0;
+
 }
 
